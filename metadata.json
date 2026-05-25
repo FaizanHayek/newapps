@@ -1,0 +1,6 @@
+{
+  "name": "GareebNoMore",
+  "description": "The ultimate Gen-Z fintech experience. Instant passwordless login, customizable avatar style, and live vibes-centered money tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,17 @@
+{
+  "short_name": "GareebNoMore",
+  "name": "GareebNoMore — Pure FinTech Vibes, No Cap",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F8F3F0",
+  "theme_color": "#271E1B",
+  "display": "standalone",
+  "orientation": "portrait"
+}
