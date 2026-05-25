@@ -67,13 +67,8 @@ export default function App() {
       <header className="h-20 border-b-4 border-black bg-espresso sticky top-0 z-50 flex items-center shadow-[0_4px_0px_0px_rgba(0,0,0,0.15)]">
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 border-3 border-black bg-white flex items-center justify-center overflow-hidden hover:rotate-6 transition-transform select-none rounded-lg shadow-[2px_2px_0px_0px_rgba(255,255,255,0.15)]">
-              <img 
-                src="/icon-192.png" 
-                alt="GareebNoMore Logo" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
+            <div className="w-10 h-10 border-4 border-black bg-white text-espresso flex items-center justify-center font-black text-xl hover:rotate-6 transition-transform select-none">
+              ₹
             </div>
             <span className="font-heading font-black text-2xl sm:text-3xl italic uppercase tracking-tighter text-white">
               Gareeb<span className="bg-latte text-espresso px-2 py-0.5 ml-1 inline-block transform -skew-x-6">NoMore</span>

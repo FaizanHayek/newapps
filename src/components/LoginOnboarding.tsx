@@ -69,16 +69,8 @@ export default function LoginOnboarding({ onLoginSuccess }: LoginOnboardingProps
   return (
     <div className="w-full max-w-lg mx-auto bg-white border-4 border-black p-6 sm:p-8 relative overflow-hidden shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] text-black">
       
-      {/* Brand title with Logo */}
-      <div className="text-center mb-6 flex flex-col items-center">
-        <div className="w-24 h-24 border-4 border-black bg-white flex items-center justify-center overflow-hidden hover:rotate-3 transition-transform duration-200 mb-4 rounded-xl shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
-          <img 
-            src="/icon-192.png" 
-            alt="GareebNoMore Logo" 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        </div>
+      {/* Brand title */}
+      <div className="text-center mb-6">
         <h1 className="text-4xl sm:text-5xl font-black italic uppercase tracking-tighter text-espresso mb-2">
           Gareeb<span className="text-white select-all bg-espresso px-2.5 py-1.5 ml-1.5 inline-block transform -skew-x-6 border-2 border-black">NoMore</span>
         </h1>
