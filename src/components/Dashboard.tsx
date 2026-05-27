@@ -23,7 +23,8 @@ import {
   Line, 
   Legend, 
   AreaChart, 
-  Area 
+  Area,
+  LabelList
 } from 'recharts';
 
 const CURRENCIES = [
@@ -184,7 +185,7 @@ export default function Dashboard({
 
   // Interactive Analytics & Charts state declarations
   const [viewMode, setViewMode] = useState<'normal' | 'charts'>('normal');
-  const [chartType, setChartType] = useState<'pie' | 'donut' | 'bar' | 'line'>('pie');
+  const [chartType, setChartType] = useState<'pie' | 'donut' | 'bar' | 'line' | 'wordart'>('pie');
   const [analyticsDuration, setAnalyticsDuration] = useState<'day' | 'month' | 'year'>('month');
   const [analyticsSelectedBank, setAnalyticsSelectedBank] = useState<string>('all');
   const [analyticsType, setAnalyticsType] = useState<'expense' | 'inflow' | 'combined'>('combined');
@@ -192,7 +193,7 @@ export default function Dashboard({
   const [chartSelectedMonth, setChartSelectedMonth] = useState<string>('all');
   const [chartSelectedYear, setChartSelectedYear] = useState<string>('all');
   const [breakdownView, setBreakdownView] = useState<'reason' | 'category'>('reason');
-  const [barGroupBy, setBarGroupBy] = useState<'category' | 'time' | 'bank'>('category');
+  const [barGroupBy, setBarGroupBy] = useState<'category' | 'time' | 'bank' | 'reason'>('category');
 
   // Random quotes
   const [randomQuote, setRandomQuote] = useState(FUN_QUOTES[0]);
@@ -493,6 +494,32 @@ export default function Dashboard({
 
   // Render the Charts and Analytics Section
   const renderChartsPage = () => {
+    // Helper to render customized compact stacked labels for Pie/Donut charts on mobile screens
+    const renderCustomizedPieLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value, name, percent }: any) => {
+      const RADIAN = Math.PI / 180;
+      // Smaller radius calculation so it fits beautifully next to our compact donut and pie
+      const radius = outerRadius + 8;
+      const x = cx + radius * Math.cos(-midAngle * RADIAN);
+      const y = cy + radius * Math.sin(-midAngle * RADIAN);
+      const pct = typeof percent === 'number' ? (percent * 100).toFixed(1) : '0.0';
+      const textAnchor = x > cx ? 'start' : 'end';
+
+      return (
+        <text
+          x={x}
+          y={y}
+          fill="#000000"
+          textAnchor={textAnchor}
+          dominantBaseline="central"
+          className="select-none"
+          style={{ fontFamily: 'JetBrains Mono, sans-serif', fontSize: '8px', fontWeight: '900' }}
+        >
+          <tspan x={x} dy="-0.5em" className="tracking-tight">{name}</tspan>
+          <tspan x={x} dy="1.1em" className="fill-zinc-500 font-bold">{symbol}{value.toLocaleString('en-IN')} ({pct}%)</tspan>
+        </text>
+      );
+    };
+
     // 1. Compile formatted transactions for charts dynamically
     const formattedTxsForCharts = transactions.map(getFormattedTx);
 
@@ -536,13 +563,43 @@ export default function Dashboard({
     // 4. Construct Pie/Donut Chart data
     let pieData: { name: string; value: number; percent?: number; color?: string }[] = [];
     if (analyticsType === 'combined') {
-      const totalInflowForPie = inflowTxs.reduce((sum, t) => sum + t.amount, 0);
-      const totalOutflowForPie = expenseTxs.reduce((sum, t) => sum + t.amount, 0);
-      if (totalInflowForPie > 0 || totalOutflowForPie > 0) {
-        pieData = [
-          { name: '📥 Inflows (Earned)', value: parseFloat(totalInflowForPie.toFixed(2)), color: '#10B981' },
-          { name: '📤 Outflows (Spent)', value: parseFloat(totalOutflowForPie.toFixed(2)), color: '#F43F5E' }
-        ];
+      if (breakdownView === 'reason') {
+        const groupingMap: Record<string, number> = {};
+        const colorMap: Record<string, string> = {};
+        chartFilteredTxs.forEach(tx => {
+          const rawLabel = getTransactionLabel(tx);
+          const cleanLabel = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+          const label = (tx.type === 'incoming' ? '📥 ' : '📤 ') + cleanLabel;
+          groupingMap[label] = (groupingMap[label] || 0) + tx.amount;
+          colorMap[label] = tx.type === 'incoming' ? '#10B981' : '#F43F5E';
+        });
+        pieData = Object.entries(groupingMap).map(([name, val]) => ({
+          name,
+          value: parseFloat(val.toFixed(2)),
+          color: colorMap[name]
+        })).sort((a, b) => b.value - a.value);
+      } else if (breakdownView === 'category') {
+        const groupingMap: Record<string, number> = {};
+        const colorMap: Record<string, string> = {};
+        chartFilteredTxs.forEach(tx => {
+          const label = (tx.type === 'incoming' ? '📥 ' : '📤 ') + tx.category.toUpperCase();
+          groupingMap[label] = (groupingMap[label] || 0) + tx.amount;
+          colorMap[label] = tx.type === 'incoming' ? '#059669' : '#DC2626';
+        });
+        pieData = Object.entries(groupingMap).map(([name, val]) => ({
+          name,
+          value: parseFloat(val.toFixed(2)),
+          color: colorMap[name]
+        })).sort((a, b) => b.value - a.value);
+      } else {
+        const totalInflowForPie = inflowTxs.reduce((sum, t) => sum + t.amount, 0);
+        const totalOutflowForPie = expenseTxs.reduce((sum, t) => sum + t.amount, 0);
+        if (totalInflowForPie > 0 || totalOutflowForPie > 0) {
+          pieData = [
+            { name: '📥 Inflows (Earned)', value: parseFloat(totalInflowForPie.toFixed(2)), color: '#10B981' },
+            { name: '📤 Outflows (Spent)', value: parseFloat(totalOutflowForPie.toFixed(2)), color: '#F43F5E' }
+          ];
+        }
       }
     } else {
       const isExpense = analyticsType === 'expense';
@@ -580,7 +637,25 @@ export default function Dashboard({
 
     // 5. Construct Bar Chart data
     let barData: any[] = [];
-    if (barGroupBy === 'category') {
+    if (barGroupBy === 'reason') {
+      const reasonMap: Record<string, { Inflow: number; Expense: number }> = {};
+      chartFilteredTxs.forEach(tx => {
+        const rawLabel = getTransactionLabel(tx);
+        const label = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+        if (!reasonMap[label]) reasonMap[label] = { Inflow: 0, Expense: 0 };
+        if (tx.type === 'incoming') {
+          reasonMap[label].Inflow += tx.amount;
+        } else {
+          reasonMap[label].Expense += tx.amount;
+        }
+      });
+      barData = Object.entries(reasonMap).map(([name, val]) => ({
+        name,
+        Inflow: parseFloat(val.Inflow.toFixed(2)),
+        Expense: parseFloat(val.Expense.toFixed(2)),
+        Net: parseFloat((val.Inflow - val.Expense).toFixed(2))
+      })).sort((a, b) => (b.Inflow + b.Expense) - (a.Inflow + a.Expense));
+    } else if (barGroupBy === 'category') {
       const categoriesList = ['stonks', 'food', 'drip', 'flex', 'rent', 'general'];
       barData = categoriesList.map(cat => {
         const catTxs = chartFilteredTxs.filter(t => t.category === cat);
@@ -657,52 +732,100 @@ export default function Dashboard({
 
     // 6. Construct Line / Trend data
     let lineData: any[] = [];
-    if (analyticsDuration === 'day') {
-      const dayMap: Record<string, { Inflow: number; Expense: number; tempDate: Date }> = {};
+    if (barGroupBy === 'reason') {
+      const reasonMap: Record<string, { Inflow: number; Expense: number }> = {};
       chartFilteredTxs.forEach(tx => {
-        const key = `${tx.txDate} ${MONTH_NAMES[tx.txMonth - 1]}`;
-        const refDate = new Date(tx.txYear || 2026, (tx.txMonth || 1) - 1, tx.txDate || 1);
-        if (!dayMap[key]) dayMap[key] = { Inflow: 0, Expense: 0, tempDate: refDate };
-        if (tx.type === 'incoming') dayMap[key].Inflow += tx.amount;
-        else dayMap[key].Expense += tx.amount;
+        const rawLabel = getTransactionLabel(tx);
+        const label = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+        if (!reasonMap[label]) reasonMap[label] = { Inflow: 0, Expense: 0 };
+        if (tx.type === 'incoming') {
+          reasonMap[label].Inflow += tx.amount;
+        } else {
+          reasonMap[label].Expense += tx.amount;
+        }
       });
-      lineData = Object.entries(dayMap).map(([name, vals]) => ({
+      lineData = Object.entries(reasonMap).map(([name, val]) => ({
         name,
-        Inflow: parseFloat(vals.Inflow.toFixed(2)),
-        Expense: parseFloat(vals.Expense.toFixed(2)),
-        Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2)),
-        tempDate: vals.tempDate
-      })).sort((a, b) => a.tempDate.getTime() - b.tempDate.getTime());
-    } else if (analyticsDuration === 'month') {
-      const monthMap: Record<string, { Inflow: number; Expense: number; tempDate: Date }> = {};
-      chartFilteredTxs.forEach(tx => {
-        const key = `${MONTH_NAMES[tx.txMonth - 1]} ${tx.txYear}`;
-        const refDate = new Date(tx.txYear || 2026, (tx.txMonth || 1) - 1, 1);
-        if (!monthMap[key]) monthMap[key] = { Inflow: 0, Expense: 0, tempDate: refDate };
-        if (tx.type === 'incoming') monthMap[key].Inflow += tx.amount;
-        else monthMap[key].Expense += tx.amount;
+        Inflow: parseFloat(val.Inflow.toFixed(2)),
+        Expense: parseFloat(val.Expense.toFixed(2)),
+        Net: parseFloat((val.Inflow - val.Expense).toFixed(2))
+      })).sort((a, b) => (b.Inflow + b.Expense) - (a.Inflow + a.Expense));
+    } else if (barGroupBy === 'category') {
+      const categoriesList = ['stonks', 'food', 'drip', 'flex', 'rent', 'general'];
+      lineData = categoriesList.map(cat => {
+        const catTxs = chartFilteredTxs.filter(t => t.category === cat);
+        const inflow = catTxs.filter(t => t.type === 'incoming').reduce((sum, t) => sum + t.amount, 0);
+        const expense = catTxs.filter(t => t.type === 'outgoing').reduce((sum, t) => sum + t.amount, 0);
+        return {
+          name: cat.toUpperCase(),
+          Inflow: parseFloat(inflow.toFixed(2)),
+          Expense: parseFloat(expense.toFixed(2)),
+          Net: parseFloat((inflow - expense).toFixed(2))
+        };
+      }).filter(d => d.Inflow > 0 || d.Expense > 0);
+    } else if (barGroupBy === 'bank') {
+      lineData = bankAccounts.map(b => {
+        const bankTxs = chartFilteredTxs.filter(t => {
+          const txBank = t.bank || bankAccounts[0]?.name || 'ICICI';
+          return txBank.toLowerCase() === b.name.toLowerCase();
+        });
+        const inflow = bankTxs.filter(t => t.type === 'incoming').reduce((sum, t) => sum + t.amount, 0);
+        const expense = bankTxs.filter(t => t.type === 'outgoing').reduce((sum, t) => sum + t.amount, 0);
+        return {
+          name: b.name.toUpperCase(),
+          Inflow: parseFloat(inflow.toFixed(2)),
+          Expense: parseFloat(expense.toFixed(2)),
+          Net: parseFloat((inflow - expense).toFixed(2))
+        };
       });
-      lineData = Object.entries(monthMap).map(([name, vals]) => ({
-        name,
-        Inflow: parseFloat(vals.Inflow.toFixed(2)),
-        Expense: parseFloat(vals.Expense.toFixed(2)),
-        Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2)),
-        tempDate: vals.tempDate
-      })).sort((a, b) => a.tempDate.getTime() - b.tempDate.getTime());
     } else {
-      const yearMap: Record<string, { Inflow: number; Expense: number }> = {};
-      chartFilteredTxs.forEach(tx => {
-        const key = `${tx.txYear}`;
-        if (!yearMap[key]) yearMap[key] = { Inflow: 0, Expense: 0 };
-        if (tx.type === 'incoming') yearMap[key].Inflow += tx.amount;
-        else yearMap[key].Expense += tx.amount;
-      });
-      lineData = Object.entries(yearMap).map(([name, vals]) => ({
-        name,
-        Inflow: parseFloat(vals.Inflow.toFixed(2)),
-        Expense: parseFloat(vals.Expense.toFixed(2)),
-        Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2))
-      })).sort((a, b) => parseInt(a.name) - parseInt(b.name));
+      if (analyticsDuration === 'day') {
+        const dayMap: Record<string, { Inflow: number; Expense: number; tempDate: Date }> = {};
+        chartFilteredTxs.forEach(tx => {
+          const key = `${tx.txDate} ${MONTH_NAMES[tx.txMonth - 1]}`;
+          const refDate = new Date(tx.txYear || 2026, (tx.txMonth || 1) - 1, tx.txDate || 1);
+          if (!dayMap[key]) dayMap[key] = { Inflow: 0, Expense: 0, tempDate: refDate };
+          if (tx.type === 'incoming') dayMap[key].Inflow += tx.amount;
+          else dayMap[key].Expense += tx.amount;
+        });
+        lineData = Object.entries(dayMap).map(([name, vals]) => ({
+          name,
+          Inflow: parseFloat(vals.Inflow.toFixed(2)),
+          Expense: parseFloat(vals.Expense.toFixed(2)),
+          Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2)),
+          tempDate: vals.tempDate
+        })).sort((a, b) => a.tempDate.getTime() - b.tempDate.getTime());
+      } else if (analyticsDuration === 'month') {
+        const monthMap: Record<string, { Inflow: number; Expense: number; tempDate: Date }> = {};
+        chartFilteredTxs.forEach(tx => {
+          const key = `${MONTH_NAMES[tx.txMonth - 1]} ${tx.txYear}`;
+          const refDate = new Date(tx.txYear || 2026, (tx.txMonth || 1) - 1, 1);
+          if (!monthMap[key]) monthMap[key] = { Inflow: 0, Expense: 0, tempDate: refDate };
+          if (tx.type === 'incoming') monthMap[key].Inflow += tx.amount;
+          else monthMap[key].Expense += tx.amount;
+        });
+        lineData = Object.entries(monthMap).map(([name, vals]) => ({
+          name,
+          Inflow: parseFloat(vals.Inflow.toFixed(2)),
+          Expense: parseFloat(vals.Expense.toFixed(2)),
+          Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2)),
+          tempDate: vals.tempDate
+        })).sort((a, b) => a.tempDate.getTime() - b.tempDate.getTime());
+      } else {
+        const yearMap: Record<string, { Inflow: number; Expense: number }> = {};
+        chartFilteredTxs.forEach(tx => {
+          const key = `${tx.txYear}`;
+          if (!yearMap[key]) yearMap[key] = { Inflow: 0, Expense: 0 };
+          if (tx.type === 'incoming') yearMap[key].Inflow += tx.amount;
+          else yearMap[key].Expense += tx.amount;
+        });
+        lineData = Object.entries(yearMap).map(([name, vals]) => ({
+          name,
+          Inflow: parseFloat(vals.Inflow.toFixed(2)),
+          Expense: parseFloat(vals.Expense.toFixed(2)),
+          Net: parseFloat((vals.Inflow - vals.Expense).toFixed(2))
+        })).sort((a, b) => parseInt(a.name) - parseInt(b.name));
+      }
     }
 
     // 7. Calculate Smart Summary Insights
@@ -1020,33 +1143,31 @@ export default function Dashboard({
               </p>
             </div>
 
-            {/* Selection tab-grid */}
-            <div className="flex items-center gap-1 bg-milk border-3 border-black p-1 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
-              {(['pie', 'donut', 'bar', 'line'] as const).map((type) => {
-                const label = type === 'pie' ? '🍕 Pie' : type === 'donut' ? '🍩 Donut' : type === 'bar' ? '📊 Bar' : '📈 Line';
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => setChartType(type)}
-                    className={`py-1.5 px-3.5 text-2xs sm:text-xs font-black uppercase tracking-wide select-none transition-all cursor-pointer ${
-                      chartType === type 
-                        ? 'bg-espresso text-white shadow-[1px_1px_0px_0px_rgba(0,0,0,1)]' 
-                        : 'text-espresso hover:bg-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
+            {/* Selection Drop-down */}
+            <div className="relative inline-block w-full md:w-64 font-heading">
+              <select
+                id="chart-type-selector"
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value as any)}
+                className="w-full bg-white border-3 border-black py-2 pl-3 pr-10 font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-espresso appearance-none cursor-pointer focus:outline-none rounded-none"
+              >
+                <option value="pie">🍕 Pie Chart</option>
+                <option value="donut">🍩 Donut Chart</option>
+                <option value="bar">📊 Bar Chart</option>
+                <option value="line">📈 Line Chart</option>
+                <option value="wordart">💬 Word Art Bubble</option>
+              </select>
+              <div className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-black flex items-center">
+                <ChevronDown size={18} strokeWidth={3} />
+              </div>
             </div>
           </div>
 
           {/* Sub Controls specific to the chart type */}
-          {chartType === 'bar' && (
+          {(chartType === 'bar' || chartType === 'line') && (
             <div className="flex items-center gap-2 flex-wrap text-2xs uppercase font-mono font-bold text-espresso">
-              <span>🗂️ Group Bars by:</span>
-              {(['category', 'time', 'bank'] as const).map((group) => (
+              <span>🗂️ Group X-axis elements by:</span>
+              {(['category', 'time', 'bank', 'reason'] as const).map((group) => (
                 <button
                   key={group}
                   type="button"
@@ -1055,27 +1176,22 @@ export default function Dashboard({
                     barGroupBy === group ? 'bg-black text-white' : 'bg-milk text-black hover:bg-zinc-100'
                   }`}
                 >
-                  {group === 'category' ? '📁 Category' : group === 'time' ? '⏰ Time Units' : '🏦 Linked Banks'}
+                  {group === 'category' ? '📁 Category' : group === 'time' ? '⏰ Time Units' : group === 'bank' ? '🏦 Linked Banks' : '⚡ Reason / Source'}
                 </button>
               ))}
             </div>
           )}
 
-          {(chartType === 'pie' || chartType === 'donut') && analyticsType !== 'combined' && (
+          {(chartType === 'pie' || chartType === 'donut') && (
             <div className="flex items-center gap-2 flex-wrap text-2xs uppercase font-mono font-bold text-espresso">
               <span>🧩 Slices Representing:</span>
-              {(['reason', 'category'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setBreakdownView(mode)}
-                  className={`px-2.5 py-1 border-2 border-black tracking-wider transition-all cursor-pointer ${
-                    breakdownView === mode ? 'bg-black text-white' : 'bg-milk text-black hover:bg-zinc-100'
-                  }`}
-                >
-                  {mode === 'reason' ? '⚡ User custom reason' : '📁 General category'}
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setBreakdownView('reason')}
+                className="px-2.5 py-1 border-2 border-black tracking-wider transition-all cursor-pointer bg-black text-white"
+              >
+                ⚡ User custom reason
+              </button>
             </div>
           )}
 
@@ -1103,8 +1219,8 @@ export default function Dashboard({
                         cx="50%"
                         cy="50%"
                         labelLine={true}
-                        label={({ name, percent, value }) => `${name}: ${symbol}${value.toLocaleString()} (${percent}%)`}
-                        outerRadius={100}
+                        label={renderCustomizedPieLabel}
+                        outerRadius={75}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -1125,7 +1241,11 @@ export default function Dashboard({
                           fontFamily: 'JetBrains Mono',
                           fontWeight: 'bold'
                         }}
-                        formatter={(value: any) => [`${symbol}${parseFloat(value).toLocaleString('en-IN')}`, 'Weighted amount']}
+                        formatter={(value: any, name: any) => {
+                          const amount = parseFloat(value);
+                          const percentage = totalPieValue > 0 ? ((amount / totalPieValue) * 100).toFixed(1) : '0';
+                          return [`${symbol}${amount.toLocaleString('en-IN')} (${percentage}%)`, name];
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1138,11 +1258,11 @@ export default function Dashboard({
                         data={pieData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
+                        innerRadius={45}
+                        outerRadius={75}
                         paddingAngle={2}
                         labelLine={true}
-                        label={({ name, percent, value }) => `${name}: ${symbol}${value.toLocaleString()} (${percent}%)`}
+                        label={renderCustomizedPieLabel}
                         fill="#8884d8"
                         dataKey="value"
                       >
@@ -1163,7 +1283,11 @@ export default function Dashboard({
                           fontFamily: 'JetBrains Mono',
                           fontWeight: 'bold'
                         }}
-                        formatter={(value: any) => [`${symbol}${parseFloat(value).toLocaleString('en-IN')}`, 'Weighted amount']}
+                        formatter={(value: any, name: any) => {
+                          const amount = parseFloat(value);
+                          const percentage = totalPieValue > 0 ? ((amount / totalPieValue) * 100).toFixed(1) : '0';
+                          return [`${symbol}${amount.toLocaleString('en-IN')} (${percentage}%)`, name];
+                        }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1202,7 +1326,14 @@ export default function Dashboard({
                           stroke="#000000" 
                           strokeWidth={2.5} 
                           radius={[4, 4, 0, 0]} 
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Inflow" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 9, fontWeight: 'bold', fill: '#000000' }} 
+                            formatter={(v: any) => v > 0 ? `${symbol}${v}` : ''}
+                          />
+                        </Bar>
                       )}
                       {analyticsType !== 'inflow' && (
                         <Bar 
@@ -1211,7 +1342,14 @@ export default function Dashboard({
                           stroke="#000000" 
                           strokeWidth={2.5} 
                           radius={[4, 4, 0, 0]} 
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Expense" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 9, fontWeight: 'bold', fill: '#000000' }} 
+                            formatter={(v: any) => v > 0 ? `${symbol}${v}` : ''}
+                          />
+                        </Bar>
                       )}
                       {analyticsType === 'combined' && (
                         <Bar 
@@ -1220,7 +1358,14 @@ export default function Dashboard({
                           stroke="#000000" 
                           strokeWidth={2.5} 
                           radius={[4, 4, 0, 0]} 
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Net" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 9, fontWeight: 'bold', fill: '#000000' }} 
+                            formatter={(v: any) => `${symbol}${v}`}
+                          />
+                        </Bar>
                       )}
                     </BarChart>
                   </ResponsiveContainer>
@@ -1228,7 +1373,7 @@ export default function Dashboard({
 
                 {chartType === 'line' && (
                   <ResponsiveContainer width="100%" height={320}>
-                    <AreaChart data={lineData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <AreaChart data={lineData} margin={{ top: 25, right: 30, left: 10, bottom: 5 }}>
                       <defs>
                         <linearGradient id="colorInflow" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
@@ -1268,7 +1413,14 @@ export default function Dashboard({
                           strokeWidth={3}
                           fillOpacity={1} 
                           fill="url(#colorInflow)" 
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Inflow" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 8, fontWeight: 'bold', fill: '#047857' }} 
+                            formatter={(v: any) => v > 0 ? `${symbol}${v}` : ''}
+                          />
+                        </Area>
                       )}
                       {analyticsType !== 'inflow' && (
                         <Area 
@@ -1278,7 +1430,14 @@ export default function Dashboard({
                           strokeWidth={3}
                           fillOpacity={1} 
                           fill="url(#colorExpense)" 
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Expense" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 8, fontWeight: 'bold', fill: '#BE123C' }} 
+                            formatter={(v: any) => v > 0 ? `${symbol}${v}` : ''}
+                          />
+                        </Area>
                       )}
                       {analyticsType === 'combined' && (
                         <Line 
@@ -1287,10 +1446,146 @@ export default function Dashboard({
                           stroke="#FFD93D" 
                           strokeWidth={4} 
                           dot={{ stroke: '#000000', strokeWidth: 2, r: 4 }}
-                        />
+                        >
+                          <LabelList 
+                            dataKey="Net" 
+                            position="top" 
+                            style={{ fontFamily: 'JetBrains Mono', fontSize: 8, fontWeight: 'bold', fill: '#000000' }} 
+                            formatter={(v: any) => `${symbol}${v}`}
+                          />
+                        </Line>
                       )}
                     </AreaChart>
                   </ResponsiveContainer>
+                )}
+
+                {chartType === 'wordart' && (
+                  <div className="py-6 px-4 w-full">
+                    <div className="text-center mb-6">
+                      <h4 className="text-sm font-black uppercase text-espresso tracking-tight">
+                        💭 WORD ART DATA BUBBLES
+                      </h4>
+                      <p className="text-[11px] font-mono text-zinc-500 uppercase">
+                        Bubble sizes correspond visually to {analyticsType === 'combined' ? 'Transaction scale' : analyticsType === 'expense' ? 'Outflow reasons' : 'Inflow reasons'}
+                      </p>
+                    </div>
+
+                    {(() => {
+                      const bubbleMap: Record<string, { amount: number; type: 'incoming' | 'outgoing'; category: string }> = {};
+                      const matchedTxs = analyticsType === 'combined' 
+                        ? chartFilteredTxs 
+                        : analyticsType === 'expense' 
+                          ? expenseTxs 
+                          : inflowTxs;
+
+                      matchedTxs.forEach(tx => {
+                        const rawLabel = getTransactionLabel(tx);
+                        const label = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+                        const key = (tx.type === 'incoming' ? '📥 ' : '📤 ') + label;
+                        if (!bubbleMap[key]) {
+                          bubbleMap[key] = { amount: 0, type: tx.type, category: tx.category };
+                        }
+                        bubbleMap[key].amount += tx.amount;
+                      });
+
+                      const bubbles = Object.entries(bubbleMap).map(([keyWithEmoji, data]) => {
+                        const cleanLabel = keyWithEmoji.substring(2);
+                        return {
+                          label: cleanLabel,
+                          keyName: keyWithEmoji,
+                          amount: parseFloat(data.amount.toFixed(2)),
+                          type: data.type,
+                          category: data.category
+                        };
+                      }).sort((a, b) => b.amount - a.amount);
+
+                      if (bubbles.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <p className="text-xs uppercase font-mono font-bold text-zinc-400">
+                              No flow entries to display Word-Art Bubbles for this range!
+                            </p>
+                          </div>
+                        );
+                      }
+
+                      const maxVal = Math.max(...bubbles.map(b => b.amount));
+
+                      return (
+                        <div className="flex flex-wrap items-center justify-center gap-6 p-4">
+                          {bubbles.map((bub, idx) => {
+                            // Calculate dynamic bubble size
+                            const minD = 100;
+                            const maxD = 210;
+                            const diameter = maxVal > 0 
+                              ? minD + (bub.amount / maxVal) * (maxD - minD) 
+                              : minD;
+
+                            // Color mapping with distinct palette options
+                            let bgClass = "bg-[#FFE8CC]"; 
+                            let borderClass = "border-black";
+
+                            if (bub.type === 'incoming') {
+                              bgClass = idx === 0 ? "bg-[#D1FAE5]" : "bg-[#ECFDF5]";
+                            } else {
+                              if (idx === 0) {
+                                bgClass = "bg-[#FFE4E6]"; 
+                              } else if (idx === 1) {
+                                bgClass = "bg-[#FEF3C7]"; 
+                              } else if (idx === 2) {
+                                bgClass = "bg-[#FFEDD5]"; 
+                              } else {
+                                bgClass = "bg-[#F3F4F6]";
+                              }
+                            }
+
+                            return (
+                              <div
+                                key={bub.keyName}
+                                className={`rounded-full border-4 ${borderClass} ${bgClass} shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex flex-col items-center justify-center text-center p-3 transition-transform hover:scale-110 relative cursor-pointer group`}
+                                style={{
+                                  width: `${diameter}px`,
+                                  height: `${diameter}px`,
+                                }}
+                              >
+                                {idx === 0 && (
+                                  <span className="absolute -top-2 bg-black text-[#FFD93D] border-2 border-black text-[9px] font-black px-1.5 py-0.5 uppercase tracking-wide shadow-sm rotate-[-3deg]">
+                                    👑 LARGEST
+                                  </span>
+                                )}
+                                {idx === 1 && (
+                                  <span className="absolute -top-1 bg-black text-white border-2 border-black text-[8px] font-black px-1 py-0.5 uppercase tracking-wide shadow-sm rotate-[2deg]">
+                                    🥈 SECOND
+                                  </span>
+                                )}
+                                {idx === 2 && (
+                                  <span className="absolute -top-1 bg-zinc-800 text-white border border-black text-[8px] font-bold px-1.5 py-0.5 uppercase tracking-wide shadow-sm">
+                                    🥉 THIRD
+                                  </span>
+                                )}
+
+                                <p className="text-[9px] uppercase font-mono tracking-tight font-black text-neutral-400">
+                                  {bub.type === 'incoming' ? '📥 INFLOW' : '📤 OUTFLOW'}
+                                </p>
+                                
+                                <p className="text-xs sm:text-sm font-black font-heading leading-tight uppercase text-espresso drop-shadow-sm break-all truncate px-1 max-w-full">
+                                  {bub.label}
+                                </p>
+
+                                <div className="mt-1 bg-black text-white font-mono text-[10px] sm:text-xs font-black px-2 py-0.5 rounded-none border border-black shadow-[1px_1px_0px_0px_rgba(255,255,255,0.25)]">
+                                  {symbol}{bub.amount.toLocaleString('en-IN')}
+                                </div>
+                                
+                                <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[9px] font-mono p-1.5 border border-white -bottom-8 z-10 pointer-events-none uppercase whitespace-nowrap">
+                                  {bub.label} ({((bub.amount / (totalPieValue || 1)) * 100).toFixed(1)}%)
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             )}
