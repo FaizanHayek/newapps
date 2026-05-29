@@ -185,15 +185,18 @@ export default function Dashboard({
 
   // Interactive Analytics & Charts state declarations
   const [viewMode, setViewMode] = useState<'normal' | 'charts'>('normal');
-  const [chartType, setChartType] = useState<'pie' | 'donut' | 'bar' | 'line' | 'wordart'>('pie');
+  const [chartType, setChartType] = useState<'pie' | 'donut' | 'bar' | 'line' | 'wordart' | 'table'>('pie');
   const [analyticsDuration, setAnalyticsDuration] = useState<'day' | 'month' | 'year'>('month');
   const [analyticsSelectedBank, setAnalyticsSelectedBank] = useState<string>('all');
-  const [analyticsType, setAnalyticsType] = useState<'expense' | 'inflow' | 'combined'>('combined');
+  const [analyticsType, setAnalyticsType] = useState<'expense' | 'inflow' | 'combined'>('expense');
   const [chartSelectedDay, setChartSelectedDay] = useState<string>('all');
   const [chartSelectedMonth, setChartSelectedMonth] = useState<string>('all');
   const [chartSelectedYear, setChartSelectedYear] = useState<string>('all');
   const [breakdownView, setBreakdownView] = useState<'reason' | 'category'>('reason');
-  const [barGroupBy, setBarGroupBy] = useState<'category' | 'time' | 'bank' | 'reason'>('category');
+  const [barGroupBy, setBarGroupBy] = useState<'category' | 'time' | 'bank' | 'reason'>('reason');
+  const [specialSelectedBank, setSpecialSelectedBank] = useState<string>('all');
+  const [specialChartOption, setSpecialChartOption] = useState<'top5' | 'basics_vs_bullshits'>('top5');
+  const [hoveredSection, setHoveredSection] = useState<'basics' | 'bullshits' | null>(null);
 
   // Random quotes
   const [randomQuote, setRandomQuote] = useState(FUN_QUOTES[0]);
@@ -930,9 +933,9 @@ export default function Dashboard({
     return (
       <div className="w-full space-y-8 text-black animate-fade-in pb-12">
         {/* Top Header Controls with Navigation Back */}
-        <div className="bg-white border-4 border-black p-5 sm:p-6 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="bg-white border-2 border-black p-2.5 sm:p-3 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
+          <div className="flex flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
               <button
                 id="back_to_dashboard_btn"
                 type="button"
@@ -940,21 +943,18 @@ export default function Dashboard({
                   setViewMode('normal');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
-                className="flex items-center justify-center w-10 h-10 bg-white hover:bg-espresso text-espresso hover:text-white border-3 border-black text-sm font-black transition-all cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none shrink-0 animate-fade-in"
+                className="flex items-center justify-center w-7 h-7 bg-white hover:bg-espresso text-espresso hover:text-white border-2 border-black text-xs font-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] select-none shrink-0 animate-fade-in"
                 title="Go Back"
               >
                 ⬅️
               </button>
               <div>
-                <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tighter text-black flex items-center gap-2 font-heading">
-                  <span>📊 GareebNoMore Insights Center</span>
-                  <span className="text-[10px] bg-red-400 border border-black text-black font-mono font-bold uppercase py-0.5 px-2">
+                <h2 className="text-xs sm:text-sm font-black uppercase tracking-tighter text-black flex items-center gap-1 font-heading">
+                  <span>📊 Charts</span>
+                  <span className="text-[8px] bg-red-400 border border-black text-black font-mono font-bold uppercase py-0 px-1">
                     Live
                   </span>
                 </h2>
-                <p className="text-espresso/60 font-bold text-xs uppercase tracking-tight">
-                  State-of-the-art interactive financials & savage visual telemetry.
-                </p>
               </div>
             </div>
 
@@ -965,200 +965,140 @@ export default function Dashboard({
                 setViewMode('normal');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="px-4 py-2 bg-espresso hover:bg-latte text-white hover:text-espresso border-3 border-black font-semibold text-xs uppercase tracking-wider shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all cursor-pointer select-none"
+              className="px-2 py-1 bg-espresso hover:bg-latte text-white hover:text-espresso border-2 border-black font-semibold text-[10px] uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all cursor-pointer select-none"
             >
               Back to original dashboard
             </button>
           </div>
         </div>
 
-        {/* Global Chart Filters Grid */}
-        <div className="bg-latte/40 border-4 border-black p-5 space-y-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-espresso animate-fade-in">
-          <div className="border-b-2 border-black pb-2 flex items-center gap-2">
-            <span className="text-lg">⚙️</span>
-            <h3 className="text-sm font-black uppercase tracking-tight font-heading">Active Analytics Scope Filters</h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* 1. SELECT BANK FOR CHARTS */}
-            <div className="space-y-1.5">
-              <label htmlFor="charts_bank_dropdown" className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-                🏦 Select Bank:
-              </label>
-              <div className="relative">
-                <select
-                  id="charts_bank_dropdown"
-                  value={analyticsSelectedBank}
-                  onChange={(e) => setAnalyticsSelectedBank(e.target.value)}
-                  className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-1px] hover:translate-y-[1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                >
-                  <option value="all">🌟 ALL BANKS COMBINED</option>
-                  {bankAccounts.map((b) => (
-                    <option key={b.name} value={b.name}>
-                      {b.name.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-black font-bold">
-                  ▼
-                </div>
-              </div>
-            </div>
-
-            {/* 2. SWITCH VISUALIZATION TYPE */}
-            <div className="space-y-1.5">
-              <label htmlFor="charts_flow_dropdown" className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-                💸 Flows Filter:
-              </label>
-              <div className="relative">
-                <select
-                  id="charts_flow_dropdown"
-                  value={analyticsType}
-                  onChange={(e) => setAnalyticsType(e.target.value as any)}
-                  className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-1px] hover:translate-y-[1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                >
-                  <option value="combined">🌟 COMBINED CASH IN/OUT</option>
-                  <option value="expense">⚠️ EXPENSES ONLY</option>
-                  <option value="inflow">💰 INFLOWS ONLY</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-black font-bold">
-                  ▼
-                </div>
-              </div>
-            </div>
-
-            {/* 3. SWITCH DURATION */}
-            <div className="space-y-1.5">
-              <label htmlFor="charts_duration_dropdown" className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-                ⏳ Duration Filter:
-              </label>
-              <div className="relative">
-                <select
-                  id="charts_duration_dropdown"
-                  value={analyticsDuration}
-                  onChange={(e) => setAnalyticsDuration(e.target.value as any)}
-                  className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-1px] hover:translate-y-[1px] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all"
-                >
-                  <option value="day">📅 DAY-WISE ANALYSIS</option>
-                  <option value="month">📂 MONTH-WISE ANALYSIS</option>
-                  <option value="year">🗓️ YEAR-WISE ANALYSIS</option>
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-black font-bold">
-                  ▼
-                </div>
-              </div>
-            </div>
-
-            {/* 4. SUB RANGE CORRESPONDING SELECTION */}
-            <div className="space-y-1.5">
-              <span className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-                {analyticsDuration === 'day' ? '📆 Select Specific Day:' : analyticsDuration === 'month' ? '📁 Select Specific Month:' : '🗓️ Select Specific Year:'}
-              </span>
-              <div className="relative">
-                {analyticsDuration === 'day' && (
-                  <select
-                    id="charts_sub_day_dropdown"
-                    value={chartSelectedDay}
-                    onChange={(e) => setChartSelectedDay(e.target.value)}
-                    className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none"
-                  >
-                    <option value="all">🌟 ALL KNOWN DAYS</option>
-                    {chartUniqueDays.map(d => (
-                      <option key={d} value={d}>{d.toUpperCase()}</option>
-                    ))}
-                  </select>
-                )}
-                {analyticsDuration === 'month' && (
-                  <select
-                    id="charts_sub_month_dropdown"
-                    value={chartSelectedMonth}
-                    onChange={(e) => setChartSelectedMonth(e.target.value)}
-                    className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none"
-                  >
-                    <option value="all">🌟 ALL KNOWN MONTHS</option>
-                    {chartUniqueMonths.map(m => (
-                      <option key={m} value={m}>{m.toUpperCase()}</option>
-                    ))}
-                  </select>
-                )}
-                {analyticsDuration === 'year' && (
-                  <select
-                    id="charts_sub_year_dropdown"
-                    value={chartSelectedYear}
-                    onChange={(e) => setChartSelectedYear(e.target.value)}
-                    className="w-full bg-white border-3 border-black rounded-none px-3 py-2.5 text-xs font-black uppercase tracking-wider text-espresso focus:outline-none cursor-pointer appearance-none shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none"
-                  >
-                    <option value="all">🌟 ALL KNOWN YEARS</option>
-                    {chartUniqueYears.map(y => (
-                      <option key={y} value={y}>{y.toUpperCase()}</option>
-                    ))}
-                  </select>
-                )}
-                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-black font-bold">
-                  ▼
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Dynamic Display of active sum in beautiful cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <div className="text-[10px] font-black uppercase text-emerald-800">📥 Dynamic Inflows Sum</div>
-            <div className="text-3xl font-heading font-black mt-1 text-espresso">
-              {symbol}{totalFilteredIn.toLocaleString('en-IN', { minimumFractionDigits: 1 })}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-white border-2 border-black py-2 sm:py-3.5 px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-center items-center text-center">
+            <div className="text-[10px] sm:text-xs font-black uppercase text-emerald-800 tracking-tight leading-none">📥 Inflows</div>
+            <div className="text-xs sm:text-sm md:text-base lg:text-lg font-heading font-black mt-1.5 text-espresso truncate max-w-full font-mono">
+              {symbol}{totalFilteredIn.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
             </div>
-            <div className="text-[9px] font-mono font-bold text-zinc-400 uppercase mt-0.5">Sourced on selected scope</div>
           </div>
 
-          <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <div className="text-[10px] font-black uppercase text-rose-500">📤 Dynamic Outflows Sum</div>
-            <div className="text-3xl font-heading font-black mt-1 text-espresso">
-              {symbol}{totalFilteredOut.toLocaleString('en-IN', { minimumFractionDigits: 1 })}
+          <div className="bg-white border-2 border-black py-2 sm:py-3.5 px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-center items-center text-center">
+            <div className="text-[10px] sm:text-xs font-black uppercase text-rose-500 tracking-tight leading-none">📤 Outflows</div>
+            <div className="text-xs sm:text-sm md:text-base lg:text-lg font-heading font-black mt-1.5 text-espresso truncate max-w-full font-mono">
+              {symbol}{totalFilteredOut.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
             </div>
-            <div className="text-[9px] font-mono font-bold text-zinc-400 uppercase mt-0.5">Spent on selected scope</div>
           </div>
 
-          <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-            <div className="text-[10px] font-black uppercase text-espresso">📈 Dynamic Net Savings</div>
-            <div className={`text-3xl font-heading font-black mt-1 ${netFilteredSavings >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
-              {netFilteredSavings >= 0 ? '+' : ''}{symbol}{netFilteredSavings.toLocaleString('en-IN', { minimumFractionDigits: 1 })}
+          <div className="bg-white border-2 border-black py-2 sm:py-3.5 px-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex flex-col justify-center items-center text-center">
+            <div className="text-[10px] sm:text-xs font-black uppercase text-espresso tracking-tight leading-none">📈 Net Saved</div>
+            <div className={`text-xs sm:text-sm md:text-base lg:text-lg font-heading font-black mt-1.5 truncate max-w-full font-mono ${netFilteredSavings >= 0 ? 'text-green-600' : 'text-rose-600'}`}>
+              {netFilteredSavings >= 0 ? '+' : ''}{symbol}{netFilteredSavings.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
             </div>
-            <div className="text-[9px] font-mono font-bold text-zinc-400 uppercase mt-0.5">Capital expansion/deficit</div>
           </div>
         </div>
 
         {/* Main Chart Card */}
         <div className="bg-white border-4 border-black p-5 sm:p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-6">
           
-          {/* Chart Tabs System */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b-3 border-black pb-4 font-heading">
+          {/* Chart Header */}
+          <div className="flex items-center justify-between border-b-3 border-black pb-2 font-heading">
             <div>
-              <h3 className="text-lg font-black uppercase tracking-tight text-espresso flex items-center gap-2">
-                <span>📈 Visual Telemetry Feed</span>
+              <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-espresso flex items-center gap-2">
+                <span>📈 CHARTS</span>
               </h3>
-              <p className="text-xs uppercase text-zinc-400 font-bold tracking-tight">
-                Switch chart engines live instantly
-              </p>
+            </div>
+          </div>
+
+          {/* Compact Dropdown Control Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-zinc-50 p-2 sm:p-3 border-2 border-black">
+            {/* Dropdown 1: Bank */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="charts_bank_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                🏦 Bank
+              </label>
+              <div className="relative">
+                <select
+                  id="charts_bank_select"
+                  value={analyticsSelectedBank}
+                  onChange={(e) => setAnalyticsSelectedBank(e.target.value)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="all">All Banks Combined</option>
+                  {bankAccounts.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+              </div>
             </div>
 
-            {/* Selection Drop-down */}
-            <div className="relative inline-block w-full md:w-64 font-heading">
-              <select
-                id="chart-type-selector"
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value as any)}
-                className="w-full bg-white border-3 border-black py-2 pl-3 pr-10 font-black text-xs sm:text-sm uppercase tracking-wider shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-espresso appearance-none cursor-pointer focus:outline-none rounded-none"
-              >
-                <option value="pie">🍕 Pie Chart</option>
-                <option value="donut">🍩 Donut Chart</option>
-                <option value="bar">📊 Bar Chart</option>
-                <option value="line">📈 Line Chart</option>
-                <option value="wordart">💬 Word Art Bubble</option>
-              </select>
-              <div className="absolute top-1/2 right-3 -translate-y-1/2 pointer-events-none text-black flex items-center">
-                <ChevronDown size={18} strokeWidth={3} />
+            {/* Dropdown 2: Flows */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="charts_flows_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                💸 Flows
+              </label>
+              <div className="relative">
+                <select
+                  id="charts_flows_select"
+                  value={analyticsType}
+                  onChange={(e) => setAnalyticsType(e.target.value as any)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="expense">Expenses Only</option>
+                  <option value="inflow">Inflows Only</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+              </div>
+            </div>
+
+            {/* Dropdown 3: Analysis */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="charts_analysis_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                ⏳ Analysis
+              </label>
+              <div className="relative">
+                <select
+                  id="charts_analysis_select"
+                  value={analyticsDuration}
+                  onChange={(e) => setAnalyticsDuration(e.target.value as any)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="day">Date Wise Analysis</option>
+                  <option value="month">Month Wise Analysis</option>
+                  <option value="year">Year Wise Analysis</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+              </div>
+            </div>
+
+            {/* Dropdown 4: Charts */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="charts_type_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                📊 Charts
+              </label>
+              <div className="relative">
+                <select
+                  id="charts_type_select"
+                  value={chartType === 'table' ? 'pie' : chartType}
+                  onChange={(e) => setChartType(e.target.value as any)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="pie">Pie Chart</option>
+                  <option value="donut">Doughnut Chart</option>
+                  <option value="bar">Bar Chart</option>
+                  <option value="line">Line Chart</option>
+                  <option value="wordart">Word Art</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
               </div>
             </div>
           </div>
@@ -1167,7 +1107,7 @@ export default function Dashboard({
           {(chartType === 'bar' || chartType === 'line') && (
             <div className="flex items-center gap-2 flex-wrap text-2xs uppercase font-mono font-bold text-espresso">
               <span>🗂️ Group X-axis elements by:</span>
-              {(['category', 'time', 'bank', 'reason'] as const).map((group) => (
+              {(['time', 'bank', 'reason'] as const).map((group) => (
                 <button
                   key={group}
                   type="button"
@@ -1176,7 +1116,7 @@ export default function Dashboard({
                     barGroupBy === group ? 'bg-black text-white' : 'bg-milk text-black hover:bg-zinc-100'
                   }`}
                 >
-                  {group === 'category' ? '📁 Category' : group === 'time' ? '⏰ Time Units' : group === 'bank' ? '🏦 Linked Banks' : '⚡ Reason / Source'}
+                  {group === 'time' ? '⏰ Time Units' : group === 'bank' ? '🏦 Linked Banks' : '⚡ Reason / Source'}
                 </button>
               ))}
             </div>
@@ -1295,11 +1235,15 @@ export default function Dashboard({
 
                 {chartType === 'bar' && (
                   <ResponsiveContainer width="100%" height={320}>
-                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <BarChart data={barData} margin={{ top: 20, right: 30, left: 10, bottom: 40 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#271E1B" opacity={0.1} />
                       <XAxis 
                         dataKey="name" 
                         stroke="#271E1B" 
+                        interval={0}
+                        angle={-30}
+                        textAnchor="end"
+                        height={55}
                         tick={{ fontFamily: 'JetBrains Mono', fontSize: 10, fontWeight: 'bold' }} 
                       />
                       <YAxis 
@@ -1325,6 +1269,7 @@ export default function Dashboard({
                           fill="#10B981" 
                           stroke="#000000" 
                           strokeWidth={2.5} 
+                          barSize={40}
                           radius={[4, 4, 0, 0]} 
                         >
                           <LabelList 
@@ -1341,6 +1286,7 @@ export default function Dashboard({
                           fill="#F43F5E" 
                           stroke="#000000" 
                           strokeWidth={2.5} 
+                          barSize={40}
                           radius={[4, 4, 0, 0]} 
                         >
                           <LabelList 
@@ -1357,6 +1303,7 @@ export default function Dashboard({
                           fill="#FFD93D" 
                           stroke="#000000" 
                           strokeWidth={2.5} 
+                          barSize={40}
                           radius={[4, 4, 0, 0]} 
                         >
                           <LabelList 
@@ -1592,6 +1539,433 @@ export default function Dashboard({
           </div>
         </div>
 
+        {/* Special Charts Card */}
+        <div id="special-charts" className="bg-white border-4 border-black p-5 sm:p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] space-y-6">
+          {/* Special Charts Header */}
+          <div className="flex items-center justify-between border-b-3 border-black pb-2 font-heading">
+            <div>
+              <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-espresso flex items-center gap-2">
+                <span>🌟 SPECIAL CHARTS</span>
+              </h3>
+            </div>
+          </div>
+
+          {/* Compact Dropdown Control Row */}
+          <div className="grid grid-cols-2 gap-3 bg-zinc-50 p-2 sm:p-3 border-2 border-black">
+            {/* Dropdown 1: Bank */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="special_bank_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                🏦 Bank
+              </label>
+              <div className="relative">
+                <select
+                  id="special_bank_select"
+                  value={specialSelectedBank}
+                  onChange={(e) => setSpecialSelectedBank(e.target.value)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="all">All Banks Combined</option>
+                  {bankAccounts.map((b) => (
+                    <option key={b.name} value={b.name}>
+                      {b.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+              </div>
+            </div>
+
+            {/* Dropdown 2: Special Charts Select (Top 5 Expenses or Basics vs. Bullshits) */}
+            <div className="space-y-1 font-heading">
+              <label htmlFor="special_type_select" className="block text-[10px] font-black uppercase tracking-tight text-espresso">
+                📊 Special Charts
+              </label>
+              <div className="relative">
+                <select
+                  id="special_type_select"
+                  value={specialChartOption}
+                  onChange={(e) => setSpecialChartOption(e.target.value as any)}
+                  className="w-full bg-white border-2 border-black rounded-none py-1.5 px-2 text-xs font-black uppercase tracking-wide text-espresso focus:outline-none appearance-none cursor-pointer shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none hover:translate-x-[-0.5px] hover:translate-y-[0.5px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all"
+                >
+                  <option value="top5">Top 5 Expenses</option>
+                  <option value="basics_vs_bullshits">Basics vs. Bullshits</option>
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-black font-bold">
+                  <ChevronDown size={14} strokeWidth={3} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Special Chart Presentation Container */}
+          <div className="relative min-h-[300px] bg-milk/25 border-3 border-dashed border-black p-4 flex flex-col items-center justify-center overflow-hidden">
+            {specialChartOption === 'top5' ? (() => {
+              // 1. Extract special filtered transactions for outgoing type
+              const specialTxs = formattedTxs.filter(tx => 
+                tx.type === 'outgoing' && 
+                (specialSelectedBank === 'all' || (tx.bank && tx.bank.toLowerCase() === specialSelectedBank.toLowerCase()))
+              );
+
+              // 2. Map to format month names nicely
+              const FULL_MONTH_NAMES: Record<string, string> = {
+                'Jan': 'January', 'Feb': 'February', 'Mar': 'March', 'Apr': 'April',
+                'May': 'May', 'Jun': 'June', 'Jul': 'July', 'Aug': 'August',
+                'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
+              };
+
+              // 3. We want to list unique months in reverse chronological order:
+              const seenSpecialMonths = new Set<string>();
+              const specialMonthsList: { month: number; year: number; label: string }[] = [];
+
+              // Sort all transactions to find month list
+              const sortedAllTxs = [...formattedTxs].sort((a, b) => {
+                const scoreA = a.txYear * 12 + a.txMonth;
+                const scoreB = b.txYear * 12 + b.txMonth;
+                return scoreB - scoreA;
+              });
+
+              sortedAllTxs.forEach(tx => {
+                const shortMonth = MONTH_NAMES[tx.txMonth - 1];
+                const fullMonth = FULL_MONTH_NAMES[shortMonth] || shortMonth;
+                const label = `${fullMonth} ${tx.txYear}`;
+                const key = `${tx.txYear}-${tx.txMonth}`;
+                if (!seenSpecialMonths.has(key)) {
+                  seenSpecialMonths.add(key);
+                  specialMonthsList.push({
+                    month: tx.txMonth,
+                    year: tx.txYear,
+                    label
+                  });
+                }
+              });
+
+              // Fallback to defaults if no months registered
+              if (specialMonthsList.length === 0) {
+                specialMonthsList.push(
+                  { month: 5, year: 2026, label: 'May 2026' },
+                  { month: 4, year: 2026, label: 'April 2026' },
+                  { month: 3, year: 2026, label: 'March 2026' }
+                );
+              }
+
+              // Take at most latest 5 months to prevent table stretching too wide
+              const displayedMonths = specialMonthsList.slice(0, 5);
+
+              // 4. Calculate Top 5 per month
+              const monthlyTopExpenses = displayedMonths.map(m => {
+                const monthlyOutgoing = specialTxs.filter(tx => tx.txMonth === m.month && tx.txYear === m.year);
+                
+                const reasonMap: Record<string, number> = {};
+                monthlyOutgoing.forEach(tx => {
+                  const rawLabel = getTransactionLabel(tx);
+                  const label = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+                  reasonMap[label] = (reasonMap[label] || 0) + tx.amount;
+                });
+
+                const sorted = Object.entries(reasonMap)
+                  .map(([reason, amount]) => ({ reason, amount }))
+                  .sort((a, b) => b.amount - a.amount);
+
+                const top5: { reason: string; amount: number }[] = [];
+                for (let i = 0; i < 5; i++) {
+                  if (i < sorted.length) {
+                    top5.push(sorted[i]);
+                  } else {
+                    top5.push({ reason: '-', amount: 0 });
+                  }
+                }
+
+                const top5Total = top5.reduce((sum, item) => sum + item.amount, 0);
+
+                return {
+                  ...m,
+                  top5,
+                  top5Total
+                };
+              });
+
+              return (
+                <div className="w-full space-y-4">
+                  <div className="text-center">
+                    <h4 className="text-xs sm:text-sm font-heading font-black uppercase text-espresso tracking-tight">
+                      📸 MONTHLY SNAPSHOT TABLE
+                    </h4>
+                    <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase">
+                      Top Outflows distribution comparison
+                    </p>
+                  </div>
+
+                  <div className="w-full overflow-x-auto border-3 border-black bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none">
+                    <table className="w-full border-collapse text-left font-mono text-xs">
+                      <thead>
+                        <tr className="bg-espresso text-white border-b-3 border-black">
+                          <th className="p-3 uppercase tracking-wider font-heading font-black border-r-2 border-black sticky left-0 bg-espresso z-10 w-[70px] text-center">
+                            🏆 RANK
+                          </th>
+                          {monthlyTopExpenses.map(item => (
+                            <th key={item.label} className="p-3 uppercase tracking-wider font-heading font-black text-center border-r-2 last:border-r-0 border-black min-w-[180px]">
+                              📅 {item.label.toUpperCase()}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: 5 }).map((_, rankIdx) => (
+                          <tr key={rankIdx} className="border-b-2 border-black last:border-b-0 hover:bg-zinc-50 transition-colors">
+                            <td className="p-3 text-center font-black border-r-2 border-black bg-zinc-50 text-espresso font-heading text-sm sticky left-0 z-10 shadow-[2px_0_0_0_rgba(0,0,0,0.1)]">
+                              {rankIdx + 1}
+                            </td>
+                            {monthlyTopExpenses.map(item => {
+                              const exp = item.top5[rankIdx];
+                              return (
+                                <td key={item.label} className="p-3 border-r-2 last:border-r-0 border-black whitespace-nowrap text-center">
+                                  {exp.reason !== '-' ? (
+                                    <div className="flex flex-col items-center justify-center gap-1">
+                                      <span className="font-heading font-black text-xs text-espresso uppercase truncate max-w-[130px]" title={exp.reason}>
+                                        ⚡ {exp.reason}
+                                      </span>
+                                      <span className="text-[10px] font-mono font-bold text-[#F43F5E] bg-rose-50 px-2 py-0.5 border-2 border-black rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                        -{symbol}{exp.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="text-center text-zinc-300 font-mono">-</div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))}
+                        {/* Aggregated Total Row */}
+                        <tr className="bg-zinc-100 font-heading border-t-4 border-black font-black text-espresso">
+                          <td className="p-3 text-center uppercase tracking-wider font-heading font-black border-r-2 border-black bg-zinc-200">
+                            TOTAL
+                          </td>
+                          {monthlyTopExpenses.map(item => (
+                            <td key={item.label} className="p-3 text-center border-r-2 last:border-r-0 border-black">
+                              <span className="font-mono text-xs font-black text-rose-600 bg-white px-2 py-1 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                                {symbol}{item.top5Total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 1 })}
+                              </span>
+                            </td>
+                          ))}
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })() : (() => {
+              // Basics vs Bullshits
+              const specialTxs = formattedTxs.filter(tx => 
+                tx.type === 'outgoing' && 
+                (specialSelectedBank === 'all' || (tx.bank && tx.bank.toLowerCase() === specialSelectedBank.toLowerCase()))
+              );
+
+              const BASICS_LIST = ['food', 'electricity', 'water', 'rent', 'daily commute', 'wi-fi / data', 'wifi / data', 'data', 'wi-fi', 'wifi', 'utility', 'utilities', 'bills', 'bill'];
+
+              const isBasics = (tx: Transaction): boolean => {
+                const label = getTransactionLabel(tx).toLowerCase().trim();
+                const category = tx.category.toLowerCase().trim();
+                
+                if (
+                  label === 'food' || label === 'electricity' || label === 'water' || label === 'rent' || 
+                  label === 'daily commute' || label === 'wi-fi / data' || label === 'wifi' || label === 'wi-fi' ||
+                  label === 'commute' || label === 'data' || label === 'internet'
+                ) {
+                  return true;
+                }
+                
+                return BASICS_LIST.includes(category) || BASICS_LIST.includes(label);
+              };
+
+              const BASICS_DISPLAY_ITEMS = [
+                { term: 'Food', matchPatterns: ['food'] },
+                { term: 'Electricity', matchPatterns: ['electricity', 'electric', 'power'] },
+                { term: 'Water', matchPatterns: ['water'] },
+                { term: 'Rent', matchPatterns: ['rent'] },
+                { term: 'Daily Commute', matchPatterns: ['daily commute', 'commute', 'travel', 'bus', 'train', 'metro', 'cab', 'taxi', 'fuel', 'petrol'] },
+                { term: 'Wi-Fi / Data', matchPatterns: ['wi-fi / data', 'wifi / data', 'wifi', 'wi-fi', 'data', 'internet', 'broadband'] }
+              ];
+
+              const basicsItemsCalculated = BASICS_DISPLAY_ITEMS.map(item => {
+                const total = specialTxs.filter(tx => {
+                  const label = getTransactionLabel(tx).toLowerCase();
+                  const cat = tx.category.toLowerCase();
+                  return item.matchPatterns.some(pat => label.includes(pat) || cat.includes(pat));
+                }).reduce((sum, tx) => sum + tx.amount, 0);
+
+                return { name: item.term, amount: total };
+              });
+
+              const basicsTotalAmount = specialTxs.filter(tx => isBasics(tx)).reduce((sum, tx) => sum + tx.amount, 0);
+
+              const bullshitsItemsMap: Record<string, number> = {};
+              specialTxs.filter(tx => !isBasics(tx)).forEach(tx => {
+                const rawLabel = getTransactionLabel(tx);
+                const label = rawLabel ? rawLabel.charAt(0).toUpperCase() + rawLabel.slice(1) : 'Other';
+                bullshitsItemsMap[label] = (bullshitsItemsMap[label] || 0) + tx.amount;
+              });
+
+              const bullshitsItemsCalculated = Object.entries(bullshitsItemsMap)
+                .map(([name, amount]) => ({ name, amount }))
+                .sort((a, b) => b.amount - a.amount);
+
+              const bullshitsTotalAmount = bullshitsItemsCalculated.reduce((sum, item) => sum + item.amount, 0);
+
+              const basicsAndBullshitsPieData = [
+                { name: 'Basics 🟢', value: basicsTotalAmount, color: '#10B981' },
+                { name: 'Bullshits 🔴', value: bullshitsTotalAmount, color: '#F43F5E' }
+              ];
+
+              const totalBasicsVsBullshitsVal = basicsTotalAmount + bullshitsTotalAmount;
+
+              return (
+                <div className="w-full relative space-y-4">
+                  <div className="text-center">
+                    <h4 className="text-xs sm:text-sm font-heading font-black uppercase text-espresso tracking-tight">
+                      🍕 BASICS VS. BULLSHITS PIE
+                    </h4>
+                    <p className="text-[10px] sm:text-xs font-mono text-zinc-500 uppercase">
+                      Necessities vs. Discretionary flows
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                    <div className="relative">
+                      {totalBasicsVsBullshitsVal === 0 ? (
+                        <div className="text-center py-10 font-mono text-xs text-zinc-400 uppercase">
+                          No expenses found in this scope to compute proportions!
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={240}>
+                          <PieChart>
+                            <Pie
+                              data={basicsAndBullshitsPieData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={30}
+                              outerRadius={75}
+                              fill="#8884d8"
+                              dataKey="value"
+                              onMouseEnter={(_, index) => {
+                                setHoveredSection(index === 0 ? 'basics' : 'bullshits');
+                              }}
+                              onMouseLeave={() => setHoveredSection(null)}
+                            >
+                              {basicsAndBullshitsPieData.map((entry, index) => (
+                                <Cell 
+                                  key={`cell-${index}`} 
+                                  fill={entry.color} 
+                                  stroke="#000000"
+                                  strokeWidth={3}
+                                />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip 
+                              contentStyle={{ 
+                                backgroundColor: '#FFFFFF', 
+                                border: '3px solid #000000', 
+                                borderRadius: '0px', 
+                                fontFamily: 'JetBrains Mono',
+                                fontWeight: 'bold'
+                              }}
+                              formatter={(value: any, name: any) => {
+                                const amount = parseFloat(value);
+                                const percent = totalBasicsVsBullshitsVal > 0 ? ((amount / totalBasicsVsBullshitsVal) * 100).toFixed(1) : '0';
+                                return [`${symbol}${amount.toLocaleString('en-IN')} (${percent}%)`, name];
+                              }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      )}
+
+                      {/* Fallback Buttons for Touch Screens / Mobile */}
+                      <div className="flex items-center justify-center gap-2 font-heading mt-2">
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHoveredSection('basics')}
+                          onMouseLeave={() => setHoveredSection(null)}
+                          onClick={() => setHoveredSection(hoveredSection === 'basics' ? null : 'basics')}
+                          className="px-2.5 py-1 bg-[#10B981] text-black border-2 border-black font-black text-[9px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all select-none cursor-pointer"
+                        >
+                          🟢 INSPECT BASICS
+                        </button>
+                        <button
+                          type="button"
+                          onMouseEnter={() => setHoveredSection('bullshits')}
+                          onMouseLeave={() => setHoveredSection(null)}
+                          onClick={() => setHoveredSection(hoveredSection === 'bullshits' ? null : 'bullshits')}
+                          className="px-2.5 py-1 bg-[#F43F5E] text-black border-2 border-black font-black text-[9px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all select-none cursor-pointer"
+                        >
+                          🔴 INSPECT BULLSHITS
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Side/Hover Popup info */}
+                    <div className="relative border-4 border-black p-4 bg-yellow-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] min-h-[180px] flex flex-col justify-center">
+                      <div className="absolute top-[-10px] left-3 bg-black text-yellow-300 border-2 border-black text-[8px] font-black px-1.5 py-0.5 uppercase tracking-wider rotate-[-1deg]">
+                        Live Breakdown
+                      </div>
+
+                      {hoveredSection ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between border-b-2 border-black pb-1">
+                            <h5 className="font-heading font-black text-2xs uppercase text-espresso">
+                              {hoveredSection === 'basics' ? '🟢 Basics Necessity' : '🔴 Discretionary Bullshits'}
+                            </h5>
+                            <span className="text-[10px] bg-black text-white px-1.5 py-0.5 font-mono font-bold">
+                              {hoveredSection === 'basics' 
+                                ? `${((basicsTotalAmount / (totalBasicsVsBullshitsVal || 1)) * 100).toFixed(1)}%` 
+                                : `${((bullshitsTotalAmount / (totalBasicsVsBullshitsVal || 1)) * 100).toFixed(1)}%`
+                              }
+                            </span>
+                          </div>
+
+                          {hoveredSection === 'basics' ? (
+                            <ul className="space-y-1 text-[11px] font-mono font-bold leading-tight">
+                              {basicsItemsCalculated.map(item => (
+                                <li key={item.name} className="flex justify-between items-center border-b border-dashed border-black/15 pb-0.5">
+                                  <span>📍 {item.name}</span>
+                                  <span className="text-zinc-600 font-black">{symbol}{item.amount.toLocaleString('en-IN')}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <div className="space-y-1 text-[11px] font-mono font-bold leading-tight">
+                              {bullshitsItemsCalculated.length === 0 ? (
+                                <p className="text-zinc-500 uppercase text-center py-4">No lifestyle expenses found!</p>
+                              ) : (
+                                <div className="max-h-[120px] overflow-y-auto pr-1 space-y-1">
+                                  {bullshitsItemsCalculated.map(item => (
+                                    <div key={item.name} className="flex justify-between items-center border-b border-dashed border-black/15 pb-0.5">
+                                      <span className="truncate max-w-[130px]" title={item.name}>🚫 {item.name}</span>
+                                      <span className="text-[#F43F5E] font-black">{symbol}{item.amount.toLocaleString('en-IN')}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-center font-heading py-4 space-y-1 text-espresso">
+                          <p className="font-black text-xs uppercase">🔍 Telemetry Inspector</p>
+                          <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase">
+                            Hover or click segment options to trigger classification insights
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+
         {/* Smart Summary Word-Art Analytics Section */}
         <div className="bg-espresso border-4 border-black p-5 sm:p-6 text-latte shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
           <div className="absolute -right-4 -bottom-4 text-7xl text-white/5 font-black uppercase tracking-tighter select-none font-heading pointer-events-none">
@@ -1602,22 +1976,9 @@ export default function Dashboard({
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-yellow-300 animate-spin animate-once" />
               <h3 className="font-heading font-black text-sm uppercase tracking-wider text-white">
-                💡 Intelligent Smart Summary & insights
+                💡 CRAZY INSIGHTS
               </h3>
             </div>
-            <span className="bg-white text-espresso border-2 border-black font-mono font-black uppercase text-[8px] px-2 py-0.5 rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] select-none">
-              AI CHOMU ALGORITHM v1.02
-            </span>
-          </div>
-
-          {/* Savage Financial Roast Word-Art Statement */}
-          <div className="bg-white/5 border-2 border-dashed border-latte/20 p-4 font-mono text-xs text-center border-spacing-2 select-text relative mb-6">
-            <span className="absolute -top-2.5 left-3 px-1.5 py-0.5 bg-espresso text-[8px] text-latte font-bold uppercase tracking-wider">
-              FINANCIAL AUDIT
-            </span>
-            <p className="text-white font-black text-sm leading-relaxed mb-1 italic">
-              "{trendHumor}"
-            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 font-mono text-xs text-white">
@@ -1700,108 +2061,46 @@ export default function Dashboard({
 
   return (
     <div className="w-full space-y-5 text-black animate-fade-in animate-once">
-      {/* 1. Trimmed Down Header Banner */}
-      <div className="bg-white border-3 border-black p-3 sm:p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden rounded-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          
-          <div className="flex items-center gap-3">
-            {/* Trimmed Avatar Area */}
-            <div className="relative shrink-0">
-              <div className="w-12 h-12 rounded-full border-3 border-black bg-latte p-0.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center overflow-hidden">
-                {profile.avatarId === 'custom' && profile.customAvatarData ? (
-                  <img
-                    id="dashboard_user_avatar"
-                    src={profile.customAvatarData}
-                    alt={profile.name}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                ) : (
-                  <span className="text-xl">
-                    {profile.avatarId === 'custom' ? '🗿' : (profile.avatarId === 'fox' ? '🦊' : (profile.avatarId === 'stonks' ? '💸' : (profile.avatarId === 'nails' ? '💅' : (profile.avatarId === 'arcade' ? '👾' : (profile.avatarId === 'alien' ? '🛸' : (profile.avatarId === 'boss' ? '👑' : (profile.avatarId === 'beast' ? '🦁' : '🗿')))))))}
-                  </span>
-                )}
-              </div>
-              
-              {/* Compact XP Badge */}
-              <div className="absolute -bottom-1 -right-1 bg-espresso border border-black text-latte text-[8px] font-black px-1 py-0.5 rounded-none font-mono flex items-center gap-0.5 shadow-sm">
-                <Star className="w-2 h-2 fill-latte" />
-                <span>{profile.experiencePoints}</span>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h2 id="dashboard_welcome_name" className="text-lg sm:text-xl font-black uppercase tracking-tight text-black">
-                  Yo, {profile.name}!
-                </h2>
-              </div>
-              
-              {/* Ultra Mini Quote */}
-              <div className="text-[10px] font-bold text-black/75 flex items-center gap-1.5 mt-0.5 leading-none">
-                <span>"{randomQuote}"</span>
-                <button
-                  id="cycle_quote_btn"
-                  onClick={handleCycleQuote}
-                  className="bg-latte border border-black text-espresso p-0.5 shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] hover:bg-espresso hover:text-white transition-colors cursor-pointer rounded-sm"
-                  title="Get inspiration"
-                >
-                  <RefreshCw className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Compact Header Actions */}
-          <div className="flex items-center gap-1.5 flex-wrap self-end md:self-auto">
-            <button
-              id="wipe_ledger_btn"
-              onClick={handleWipeLedger}
-              className={`flex items-center gap-1 px-2.5 py-1.5 border-2 border-black font-mono font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer select-none ${
-                confirmWipe 
-                  ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse' 
-                  : 'bg-amber-400 hover:bg-amber-500 text-black'
-              }`}
-            >
-              <span>{confirmWipe ? '⚠️ Confirm' : '🧹 Zero Out'}</span>
-            </button>
-            <button
-              id="logout_action_btn"
-              onClick={onLogout}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-espresso hover:bg-latte border-2 border-black text-white hover:text-espresso font-mono font-black text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer select-none"
-            >
-              <LogOut className="w-3 h-3" />
-              <span>Reset Setup</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 1.5 Mini Currency Selection Block */}
-      <div className="bg-white border-2 border-black rounded-lg py-1 px-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between gap-2 text-espresso text-[11px] font-mono select-none">
-        <div className="flex items-center gap-1.5">
-          <span>💱</span>
-          <span className="font-extrabold uppercase tracking-tight text-[10px] text-espresso/80">Currency:</span>
-          <span className="bg-espresso text-milk px-1.5 py-0.5 rounded font-black text-[9px] uppercase">
-            {profile.currencyCode || 'INR'}
-          </span>
+      {/* 1. Minimal Header Options Row */}
+      <div className="flex items-center justify-between gap-1.5 sm:gap-3 text-xs font-mono select-none flex-nowrap w-full overflow-x-auto">
+        {/* Tiny option of zero out and reset setup at the top left corner */}
+        <div className="flex items-center gap-1 sm:gap-2 flex-nowrap shrink-0">
+          <button
+            id="wipe_ledger_btn"
+            onClick={handleWipeLedger}
+            className={`flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 border-2 border-black font-mono font-black text-[9px] sm:text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer select-none ${
+              confirmWipe 
+                ? 'bg-red-500 text-white hover:bg-red-600 animate-pulse' 
+                : 'bg-amber-400 hover:bg-amber-500 text-black'
+            }`}
+          >
+            <span>{confirmWipe ? '⚠️ Confirm' : '🧹 Zero Out'}</span>
+          </button>
+          <button
+            id="logout_action_btn"
+            onClick={onLogout}
+            className="flex items-center gap-1 px-2 py-1 sm:px-2.5 sm:py-1.5 bg-espresso hover:bg-latte border-2 border-black text-white hover:text-espresso font-mono font-black text-[9px] sm:text-[10px] uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer select-none"
+          >
+            <LogOut className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+            <span>Reset Setup</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <div className="relative">
-            <select
-              id="compact_currency_dropdown"
-              value={profile.currencyCode || 'INR'}
-              onChange={(e) => onUpdateProfile({ ...profile, currencyCode: e.target.value })}
-              className="bg-milk/60 hover:bg-milk border border-black rounded px-1.5 py-0.5 text-[10px] font-black uppercase text-espresso focus:outline-none cursor-pointer"
-            >
-              {CURRENCIES.map((curr) => (
-                <option key={curr.code} value={curr.code} className="font-sans font-bold">
-                  {curr.symbol} {curr.code}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Currency selection at the top right corner */}
+        <div className="flex items-center gap-1 bg-white border-2 border-black px-2 py-1 sm:px-2.5 sm:py-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
+          <span className="font-black uppercase text-[8px] sm:text-[10px] text-espresso/80">Currency:</span>
+          <select
+            id="compact_currency_dropdown"
+            value={profile.currencyCode || 'INR'}
+            onChange={(e) => onUpdateProfile({ ...profile, currencyCode: e.target.value })}
+            className="bg-transparent border-none text-[8px] sm:text-[10px] font-black uppercase text-espresso focus:outline-none cursor-pointer p-0"
+          >
+            {CURRENCIES.map((curr) => (
+              <option key={curr.code} value={curr.code} className="font-sans font-bold bg-white text-black text-xs">
+                {curr.symbol} {curr.code}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -1811,9 +2110,6 @@ export default function Dashboard({
           <h3 className="text-xl font-black uppercase tracking-tight text-espresso flex items-center gap-2">
             <span>✍️ Record Expense</span>
           </h3>
-          <p className="text-espresso/70 font-bold text-xs mt-1 uppercase tracking-tight">
-            Log outflows with instant bank selection, amount and reason controls.
-          </p>
         </div>
 
         <form onSubmit={handleExpenseSubmit} className="space-y-4">
@@ -1891,7 +2187,7 @@ export default function Dashboard({
           {/* Custom option adder section */}
           <div className="bg-white/45 border-3 border-dashed border-black/20 p-3 space-y-2 mt-5">
             <label className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-              ➕ Add Custom Dropdown Option
+              ➕ Add Custom Reason
             </label>
             <div className="flex gap-2">
               <input
@@ -1923,15 +2219,12 @@ export default function Dashboard({
         </form>
       </div>
 
-      {/* 2.5 Record Inflow (Directly below Record Expense) */}
+      {/* 2.5 Record Income (Directly below Record Expense) */}
       <div className="bg-white border-4 border-black p-5 sm:p-6 space-y-4 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-black">
         <div className="border-b-2 border-black pb-2">
           <h3 className="text-xl font-black uppercase tracking-tight text-espresso flex items-center gap-2">
-            <span>📈 Record Inflow</span>
+            <span>📈 Record Income</span>
           </h3>
-          <p className="text-espresso/70 font-bold text-xs mt-1 uppercase tracking-tight">
-            Log financial gains and income sources with instant bank categorization.
-          </p>
         </div>
 
         <form onSubmit={handleInflowSubmit} className="space-y-4">
@@ -2006,10 +2299,10 @@ export default function Dashboard({
             </div>
           </div>
 
-          {/* Custom option adder section for Inflows */}
+          {/* Custom option adder section for Income */}
           <div className="bg-white/45 border-3 border-dashed border-black/20 p-3 space-y-2 mt-5">
             <label className="block text-[10px] font-black uppercase tracking-wider text-espresso">
-              ➕ Add Custom Inflow Dropdown Option
+              ➕ Add Custom Reason
             </label>
             <div className="flex gap-2">
               <input
@@ -2036,7 +2329,7 @@ export default function Dashboard({
             type="submit"
             className="w-full py-4 bg-espresso border-4 border-black text-white hover:bg-latte hover:text-espresso font-black text-sm uppercase tracking-wider shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer mt-3"
           >
-            Record Inflow
+            Record Income
           </button>
         </form>
       </div>
@@ -2046,10 +2339,7 @@ export default function Dashboard({
         <div className="flex flex-col gap-3 pb-3 border-b-2 border-black">
           <div className="flex justify-between items-center flex-wrap gap-2">
             <h3 className="text-xl font-black uppercase tracking-tight text-espresso flex items-center gap-2">
-              <span>🗂️ Live Vibe Ledger</span>
-              <span className="text-xs bg-latte text-espresso border-2 border-black px-2.5 py-0.5 font-bold shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] animate-pulse">
-                {filteredTransactions.length} of {transactions.length} MOVE(S)
-              </span>
+              <span>🗂️ Live Ledger</span>
             </h3>
           </div>
 
@@ -2235,13 +2525,13 @@ export default function Dashboard({
         </div>
       </div>
 
-      {/* 4. Direct Live Vault Section (Moved directly below Live Vibe Ledger) */}
+      {/* 4. Live Vault Section (Moved directly below Live Vibe Ledger) */}
       <div className="bg-latte border-4 border-black p-6 relative overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] text-espresso flex flex-col justify-between">
         <div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2 text-espresso font-black uppercase tracking-widest text-xs">
               <Wallet className="w-4.5 h-4.5 text-espresso" />
-              <span>🏦 Direct Live Vault</span>
+              <span>🏦 Live Vault</span>
             </div>
 
             {/* Selector Dropdown to switch display context */}
@@ -2384,7 +2674,7 @@ export default function Dashboard({
                     <div className="text-[10px] font-black uppercase tracking-wider text-emerald-800 flex items-center gap-1">
                       📥 Sourced In (Monthly)
                     </div>
-                    <div className="text-xl font-black text-espresso mt-1 font-mono">
+                    <div className="text-sm sm:text-base font-black text-espresso mt-1 font-mono">
                       {symbol}{monthlyInflowTotal.toLocaleString('en-IN', { minimumFractionDigits: 1 })}
                     </div>
                     <div className="text-[8px] uppercase tracking-wide font-black text-espresso/45 mt-0.5">
@@ -2396,7 +2686,7 @@ export default function Dashboard({
                     <div className="text-[10px] font-black uppercase tracking-wider text-rose-800 flex items-center gap-1">
                       📤 Transferred Out (Monthly)
                     </div>
-                    <div className="text-xl font-black text-espresso mt-1 font-mono">
+                    <div className="text-sm sm:text-base font-black text-espresso mt-1 font-mono">
                       {symbol}{monthlyOutflowTotal.toLocaleString('en-IN', { minimumFractionDigits: 1 })}
                     </div>
                     <div className="text-[8px] uppercase tracking-wide font-black text-espresso/45 mt-0.5">
@@ -2420,7 +2710,7 @@ export default function Dashboard({
             }}
             className="w-full py-5 bg-espresso border-4 border-black text-white hover:bg-latte hover:text-espresso font-heading font-black text-xl md:text-2xl uppercase tracking-wider shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-3 select-none"
           >
-            <span>📈 Open Charts & Telemetry Analytics</span>
+            <span>📈 CHARTS & ANALYTICS</span>
             <span className="bg-white text-espresso px-2.5 py-0.5 text-xs font-mono font-black border-2 border-black transform rotate-2">
               GO! 📊
             </span>

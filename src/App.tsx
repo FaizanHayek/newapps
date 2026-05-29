@@ -6,6 +6,15 @@ import LoginOnboarding from './components/LoginOnboarding';
 import Dashboard from './components/Dashboard';
 import { Sparkles, Terminal, Heart } from 'lucide-react';
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  JPY: '¥',
+  CAD: 'C$'
+};
+
 export default function App() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -68,7 +77,7 @@ export default function App() {
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 border-4 border-black bg-white text-espresso flex items-center justify-center font-black text-xl hover:rotate-6 transition-transform select-none">
-              ₹
+              {profile?.currencyCode ? (CURRENCY_SYMBOLS[profile.currencyCode] || '₹') : '₹'}
             </div>
             <span className="font-heading font-black text-2xl sm:text-3xl italic uppercase tracking-tighter text-white">
               Gareeb<span className="bg-latte text-espresso px-2 py-0.5 ml-1 inline-block transform -skew-x-6">NoMore</span>
