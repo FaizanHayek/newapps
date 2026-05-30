@@ -1,14 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+:root {
+  --bg-app: #F8F3F0; /* milk */
+  --bg-card: #FFFFFF; /* white */
+  --text-primary: #271E1B; /* espresso */
+  --text-secondary: #4A352F; /* coffee */
+  --border-color: #000000;
+  --latte-color: #C7B3A9;
+  --hazelnut-color: #8D6E63;
+}
+
+:root.dark {
+  --bg-app: #140E0C; /* deep dark background */
+  --bg-card: #221A18; /* cozy dark cocoa card */
+  --text-primary: #F8F3F0; /* milk text */
+  --text-secondary: #C7B3A9; /* latte secondary text */
+  --border-color: #F8F3F0; /* milk borders */
+  --latte-color: #4A352F; /* deep coffee */
+  --hazelnut-color: #A1887F;
+}
+
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Space Grotesk", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
-  --color-espresso: #271E1B;
-  --color-coffee: #4A352F;
-  --color-latte: #C7B3A9;
-  --color-milk: #F8F3F0;
-  --color-hazelnut: #8D6E63;
+  --color-espresso: var(--text-primary);
+  --color-coffee: var(--text-secondary);
+  --color-latte: var(--latte-color);
+  --color-milk: var(--bg-app);
+  --color-white: var(--bg-card);
+  --color-black: var(--border-color);
+  --color-hazelnut: var(--hazelnut-color);
 }
+

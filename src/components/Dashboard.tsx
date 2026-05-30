@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   LogOut, Plus, Minus, TrendingUp, TrendingDown, Wallet, 
@@ -90,6 +90,9 @@ interface DashboardProps {
   onUpdateProfile: (updatedProfile: UserProfile) => void;
   onUpdateTransactions: (updatedTxs: Transaction[]) => void;
   onLogout: () => void;
+  viewMode: 'normal' | 'charts';
+  onViewModeChange: (mode: 'normal' | 'charts') => void;
+  onNavigateToPage: (page: 'login' | 'link-banks' | 'dashboard' | 'charts') => void;
 }
 
 export default function Dashboard({
@@ -97,7 +100,10 @@ export default function Dashboard({
   transactions,
   onUpdateProfile,
   onUpdateTransactions,
-  onLogout
+  onLogout,
+  viewMode,
+  onViewModeChange,
+  onNavigateToPage
 }: DashboardProps) {
   const symbol = getCurrencySymbol(profile.currencyCode);
 
@@ -184,7 +190,6 @@ export default function Dashboard({
   };
 
   // Interactive Analytics & Charts state declarations
-  const [viewMode, setViewMode] = useState<'normal' | 'charts'>('normal');
   const [chartType, setChartType] = useState<'pie' | 'donut' | 'bar' | 'line' | 'wordart' | 'table'>('pie');
   const [analyticsDuration, setAnalyticsDuration] = useState<'day' | 'month' | 'year'>('month');
   const [analyticsSelectedBank, setAnalyticsSelectedBank] = useState<string>('all');
@@ -940,7 +945,7 @@ export default function Dashboard({
                 id="back_to_dashboard_btn"
                 type="button"
                 onClick={() => {
-                  setViewMode('normal');
+                  onViewModeChange('normal');
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 className="flex items-center justify-center w-7 h-7 bg-white hover:bg-espresso text-espresso hover:text-white border-2 border-black text-xs font-black transition-all cursor-pointer shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] select-none shrink-0 animate-fade-in"
@@ -962,7 +967,7 @@ export default function Dashboard({
               id="header_back_cta_btn"
               type="button"
               onClick={() => {
-                setViewMode('normal');
+                onViewModeChange('normal');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="px-2 py-1 bg-espresso hover:bg-latte text-white hover:text-espresso border-2 border-black font-semibold text-[10px] uppercase tracking-tight shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[0.5px] hover:translate-y-[0.5px] hover:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] active:scale-95 transition-all cursor-pointer select-none"
@@ -2599,74 +2604,19 @@ export default function Dashboard({
                     </div>
                   </div>
 
-                  {/* Toggle Add Bank Action Button */}
+                  {/* New Manage Bank Accounts Navigation Button */}
                   <button
-                    id="toggle_add_bank_form_btn"
+                    id="manage_banks_navigation_btn"
                     type="button"
-                    onClick={() => setIsAddingBank(!isAddingBank)}
-                    className="py-2 px-4 bg-white hover:bg-espresso text-espresso hover:text-white border-2 border-black font-black uppercase text-[10px] tracking-wider rounded-xl shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer active:scale-95"
+                    onClick={() => onNavigateToPage('link-banks')}
+                    className="py-2.5 px-4 bg-espresso text-white hover:bg-latte hover:text-espresso border-2 border-black font-black uppercase text-[10px] tracking-wider rounded-xl shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer active:scale-95 flex items-center gap-1.5"
                   >
-                    {isAddingBank ? '✖ Close Form' : '➕ Link Bank Account'}
+                    <span>🏦 MANAGE BANKS</span>
+                    <span className="bg-white text-espresso px-1.5 py-0.5 text-[8px] font-mono font-black border border-black transform rotate-1 rounded">
+                      EDIT 🔗
+                    </span>
                   </button>
                 </div>
-
-                {/* Dynamic inline container form to add banks */}
-                <AnimatePresence>
-                  {isAddingBank && (
-                    <motion.form
-                      id="vault_add_bank_form"
-                      onSubmit={handleAddBankSubmit}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="bg-white/60 border-2 border-dashed border-espresso/35 p-4 space-y-3 rounded-none mb-4 overflow-hidden"
-                    >
-                      <div className="text-xs font-black uppercase tracking-wider text-espresso">
-                        ➕ Link Dynamic Bank Account
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-[9px] font-black uppercase tracking-widest text-espresso/80 mb-1">
-                            Bank Name (e.g. SBI, Axis) *
-                          </label>
-                          <input
-                            id="new_bank_name_input"
-                            type="text"
-                            required
-                            placeholder="e.g. Axis"
-                            value={newBankName}
-                            onChange={(e) => setNewBankName(e.target.value)}
-                            className="w-full bg-white border-2 border-black px-2.5 py-1.5 text-xs font-bold focus:outline-none placeholder:text-zinc-400 uppercase"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[9px] font-black uppercase tracking-widest text-espresso/80 mb-1">
-                            Starting Balance *
-                          </label>
-                          <input
-                            id="new_bank_balance_input"
-                            type="number"
-                            required
-                            min="0"
-                            step="any"
-                            placeholder="e.g. 10000"
-                            value={newBankStartingBalance}
-                            onChange={(e) => setNewBankStartingBalance(e.target.value)}
-                            className="w-full bg-white border-2 border-black px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none placeholder:text-zinc-400"
-                          />
-                        </div>
-                      </div>
-                      <button
-                        id="confirm_link_bank_btn"
-                        type="submit"
-                        className="w-full py-2 bg-espresso text-white hover:bg-white hover:text-espresso border-2 border-black text-[10px] font-black uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all cursor-pointer"
-                      >
-                        Verify and Link Account ⚡
-                      </button>
-                    </motion.form>
-                  )}
-                </AnimatePresence>
 
                 {/* Sourced In (Monthly sum) vs Transferred Out (Monthly sum) */}
                 <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t-2 border-black/15">
@@ -2705,7 +2655,7 @@ export default function Dashboard({
             id="navigate_to_charts_btn"
             type="button"
             onClick={() => {
-              setViewMode('charts');
+              onViewModeChange('charts');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="w-full py-5 bg-espresso border-4 border-black text-white hover:bg-latte hover:text-espresso font-heading font-black text-xl md:text-2xl uppercase tracking-wider shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-3 select-none"
