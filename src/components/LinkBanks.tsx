@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { Plus, Trash2, ArrowRight, ShieldCheck, Landmark, Check, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, ShieldCheck, Landmark, Check, HelpCircle, Banknote } from 'lucide-react';
 import { BankAccount } from '../types';
 
 interface LinkBanksProps {
@@ -18,11 +18,18 @@ const PRESET_BANKS = [
   'Kotak',
   'PNB',
   'Paytm Bank',
-  'Google Pay / GPay'
+  'Cash'
 ];
 
 export default function LinkBanks({ initialBanks, onSave, onBack, isOnboarding }: LinkBanksProps) {
-  const [banks, setBanks] = useState<BankAccount[]>(initialBanks || []);
+  const [banks, setBanks] = useState<BankAccount[]>(() => {
+    const initial = initialBanks || [];
+    const hasCash = initial.some(b => b.name.toLowerCase() === 'cash');
+    if (!hasCash) {
+      return [{ name: 'Cash', startingBalance: 0 }, ...initial];
+    }
+    return initial;
+  });
   const [newBankName, setNewBankName] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -41,10 +48,12 @@ export default function LinkBanks({ initialBanks, onSave, onBack, isOnboarding }
   };
 
   const handleDeleteBank = (name: string) => {
-    setBanks(banks.filter(b => b.name !== name));
+    if (name.toLowerCase() === 'cash') return;
+    setBanks(banks.filter(b => b.name.toLowerCase() !== name.toLowerCase()));
   };
 
   const handleTogglePreset = (preset: string) => {
+    if (preset.toLowerCase() === 'cash') return;
     const exists = banks.some(b => b.name.toLowerCase() === preset.toLowerCase());
     if (exists) {
       handleDeleteBank(preset);
@@ -78,9 +87,6 @@ export default function LinkBanks({ initialBanks, onSave, onBack, isOnboarding }
         <h1 className="text-3xl sm:text-4xl font-black italic uppercase tracking-tighter text-espresso mb-1">
           Link Your <span className="bg-espresso text-white px-2 py-0.5 inline-block transform -skew-x-6 border border-black">Bank Accounts</span>
         </h1>
-        <p className="text-espresso font-extrabold text-[11px] uppercase tracking-wider max-w-md mx-auto bg-latte/15 px-3 py-1 border border-espresso/10 inline-block mt-2">
-          Select or add all banks you hold accounts in to sync live ledger analytics!
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -91,6 +97,23 @@ export default function LinkBanks({ initialBanks, onSave, onBack, isOnboarding }
           </label>
           <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 gap-2">
             {PRESET_BANKS.map((preset) => {
+              const isCash = preset.toLowerCase() === 'cash';
+              
+              if (isCash) {
+                return (
+                  <button
+                    id="preset_bank_toggle_Cash"
+                    key="Cash"
+                    type="button"
+                    className="col-span-2 py-3 px-3 relative overflow-hidden border-3 border-black font-black uppercase bg-espresso text-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] select-none cursor-default flex items-center justify-center gap-2"
+                  >
+                    <Banknote size={18} strokeWidth={3} className="text-emerald-400 shrink-0" />
+                    <span className="text-base font-extrabold tracking-wide">Cash</span>
+                    <span className="text-[8px] font-mono font-bold bg-emerald-600 text-white px-1 py-0.5 rounded ml-0.5 uppercase">ALWAYS SELECTED</span>
+                  </button>
+                );
+              }
+
               const isSelected = banks.some(b => b.name.toLowerCase() === preset.toLowerCase());
               return (
                 <button
@@ -171,27 +194,38 @@ export default function LinkBanks({ initialBanks, onSave, onBack, isOnboarding }
             </div>
           ) : (
             <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1">
-              {banks.map((b) => (
-                <div
-                  id={`linked_bank_row_${b.name.replace(/\s+/g, '_')}`}
-                  key={b.name}
-                  className="flex items-center justify-between bg-zinc-50 border-2 border-black p-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-zinc-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2 text-espresso font-black text-xs uppercase">
-                    <Landmark size={14} className="text-espresso shrink-0" />
-                    <span>{b.name}</span>
-                  </div>
-                  <button
-                    id={`delete_linked_bank_btn_${b.name.replace(/\s+/g, '_')}`}
-                    type="button"
-                    onClick={() => handleDeleteBank(b.name)}
-                    className="p-1 px-2 border-2 border-transparent hover:border-black hover:bg-rose-50 text-rose-600 hover:text-red-700 transition-all cursor-pointer"
-                    title={`Delete account ${b.name}`}
+              {banks.map((b) => {
+                const isCash = b.name.toLowerCase() === 'cash';
+                return (
+                  <div
+                    id={`linked_bank_row_${b.name.replace(/\s+/g, '_')}`}
+                    key={b.name}
+                    className="flex items-center justify-between bg-zinc-50 border-2 border-black p-2.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-zinc-100 transition-colors"
                   >
-                    <Trash2 size={13} strokeWidth={2.5} />
-                  </button>
-                </div>
-              ))}
+                    <div className="flex items-center gap-2 text-espresso font-black text-xs uppercase">
+                      {isCash ? (
+                        <Banknote size={15} className="text-emerald-600 shrink-0" />
+                      ) : (
+                        <Landmark size={14} className="text-espresso shrink-0" />
+                      )}
+                      <span className={isCash ? "text-sm font-black tracking-wide text-emerald-800" : ""}>{b.name}</span>
+                    </div>
+                    {!isCash ? (
+                      <button
+                        id={`delete_linked_bank_btn_${b.name.replace(/\s+/g, '_')}`}
+                        type="button"
+                        onClick={() => handleDeleteBank(b.name)}
+                        className="p-1 px-2 border-2 border-transparent hover:border-black hover:bg-rose-50 text-rose-600 hover:text-red-700 transition-all cursor-pointer"
+                        title={`Delete account ${b.name}`}
+                      >
+                        <Trash2 size={13} strokeWidth={2.5} />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] font-mono text-emerald-600 uppercase font-bold mr-1">PRIMARY</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

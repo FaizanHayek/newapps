@@ -108,12 +108,20 @@ export default function Dashboard({
   const symbol = getCurrencySymbol(profile.currencyCode);
 
   // Derived/fallback bank accounts
-  const bankAccounts = profile.banks && profile.banks.length > 0
-    ? profile.banks
-    : [
-        { name: 'ICICI', startingBalance: 0 },
-        { name: 'HDFC', startingBalance: 0 }
-      ];
+  const bankAccounts = (() => {
+    const list = profile.banks && profile.banks.length > 0
+      ? profile.banks
+      : [
+          { name: 'Cash', startingBalance: 0 },
+          { name: 'ICICI', startingBalance: 0 },
+          { name: 'HDFC', startingBalance: 0 }
+        ];
+    const hasCash = list.some(b => b.name.toLowerCase() === 'cash');
+    if (!hasCash) {
+      return [{ name: 'Cash', startingBalance: 0 }, ...list];
+    }
+    return list.map(b => b.name.toLowerCase() === 'cash' ? { ...b, name: 'Cash' } : b);
+  })();
 
   // Bank states
   const [vaultSelectedBank, setVaultSelectedBank] = useState<string>('all');

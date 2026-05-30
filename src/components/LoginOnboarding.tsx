@@ -58,6 +58,7 @@ export default function LoginOnboarding({ onLoginSuccess }: LoginOnboardingProps
       experiencePoints: 0, // Fresh start at 0 XP
       currencyCode: 'INR',
       banks: [
+        { name: 'Cash', startingBalance: 0 },
         { name: 'ICICI', startingBalance: 0 },
         { name: 'HDFC', startingBalance: 0 }
       ]
